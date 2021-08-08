@@ -1,0 +1,5 @@
+-- 更新价格字段为数字
+UPDATE house_info_copy1 SET price = SUBSTR(price,1,LENGTH(price)-3) ;
+
+-- 更新面积字段为数字
+UPDATE house_info_copy1 SET area = SUBSTR(area,1,LENGTH(area)-3) ;
