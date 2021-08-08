@@ -8,6 +8,7 @@ import urllib.request
 import random
 
 import requests
+import pymysql
 import sqlite3
 from bs4 import BeautifulSoup
 
@@ -114,7 +115,11 @@ class house_info:
 
 class house_info_db:
     def __init__(self, db_name):
-        self.con = sqlite3.connect(db_name, check_same_thread=False)
+        # sqllite
+        # self.con = sqlite3.connect(db_name, check_same_thread=False)
+        # mysql
+        self.con = pymysql.connect(host='127.0.0.1', port=3306, user='root', passwd='root', db='ershoufang',
+                                   charset='utf8')
         self.cur = self.con.cursor()
 
         # 房源ID,标题,发布日期,小区,户型,建筑面积,价格,建筑年代,朝向,楼层,房本年限,唯一住房,详情页网址,房源类型
@@ -198,6 +203,7 @@ def download_img(url_list, path):
         except Exception as e:
             print('[url:error] -> [%s:%s]' % (url, e))
         name += 1
+
 
 # 链家下载图片
 def download_img_lianjia(url_list, path, name):

@@ -14,6 +14,7 @@ import urllib.request
 sleep_time = 6000
 # 详情页间隔，防止被反爬虫
 sleep_time_detail = 10
+# 使用 random.randint(5, 30)替代
 # 数据库
 db_name = 'house_info'
 # 按照最新排序
@@ -61,7 +62,6 @@ def get_detail(url, max_date, info):
     tag_tmp = tag.find('div', class_='transaction')
     tag_tmp = tag_tmp.find('div', class_='content')
     tags = tag_tmp.find_all('li')
-
 
     # 发布日期
     str_date = get_text(tags, 0, 4, -1)
@@ -149,7 +149,7 @@ def get_general(url, id_list, max_date, info, db):
         # 标题
         tag_tmp = tag.find('a', class_='title')
         info.title = tag_tmp.get_text()
-        # print('正在爬取：', info.title)
+        print('正在爬取：', info.title)
 
         # 唯一ID
         text = tag.a['href']
@@ -167,6 +167,8 @@ def get_general(url, id_list, max_date, info, db):
                 # 可能存在重复
                 db.insert(info)
                 print('%s已入库：' % info.title, result)
+                # 格式化成2016-03-20 11:45:39形式
+                print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
             elif result == 1:
                 print('未入库：', result)
                 continue
@@ -177,11 +179,12 @@ def get_general(url, id_list, max_date, info, db):
         else:
             # 如果发布频率快，可能导致有id重复。不使用id判断
             # return -3
-            pass
+            print("%s已存在" % info.id)
+            continue
 
         # 降低频率，防止被反爬虫
-        time.sleep(sleep_time_detail)
-    return 0
+        time.sleep(random.randint(5, 30))
+    return len(tags)
 
 
 def main():
@@ -198,7 +201,7 @@ def main():
         try:
             """
             https://tj.lianjia.com/ershoufang/wuqing/pg1co32/
-            https://tj.lianjia.com/ershoufang/wuqing/pg2co32/
+            https://tj.lianjia.com/ershoufang/wuqing/pg2co32/                                                      
             https://tj.lianjia.com/ershoufang/wuqing/pg3co32/
             
             2021-08-07
@@ -207,13 +210,14 @@ def main():
             """
             url = '%spg%d' % (base_url, page)
             print('#' * 10)
-            print("正在爬取第%d页" % page)
+            print('#' * 10, "正在爬取第%d页" % page, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
             result = get_general(url, id_list, max_date, info, db)
-            print(result)
-            if result == 0:
+            print('#' * 10, "%d页爬取完成" % page, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+            if result > 1:
                 page = page + 1
-                time.sleep(sleep_time_detail)
+                time.sleep(random.randint(5, 30))
             else:
+                # 报错后 重置爬取页数，从第一页开始重新爬取
                 page = 1
                 time.sleep(sleep_time)
         except Exception as e:
