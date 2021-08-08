@@ -9,6 +9,29 @@ import json
 from bs4 import BeautifulSoup
 from src.common import *
 import urllib.request
+import logging
+
+# 第一步，创建一个logger
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)  # Log等级总开关  此时是INFO
+
+# 第二步，创建一个handler，用于写入日志文件
+logfile = './ershoufang.log'
+fh = logging.FileHandler(logfile, mode='a')  # open的打开模式这里可以进行参考
+fh.setLevel(logging.INFO)  # 输出到file的log等级的开关
+
+# 第三步，再创建一个handler，用于输出到控制台
+ch = logging.StreamHandler()
+ch.setLevel(logging.INFO)  # 输出到console的log等级的开关
+
+# 第四步，定义handler的输出格式（时间，文件，行数，错误级别，错误提示）
+formatter = logging.Formatter("%(asctime)s - %(filename)s[line:%(lineno)d] - %(levelname)s: %(message)s")
+fh.setFormatter(formatter)
+ch.setFormatter(formatter)
+
+# 第五步，将logger添加到handler里面
+logger.addHandler(fh)
+logger.addHandler(ch)
 
 # 监控间隔 6000秒
 sleep_time = 6000
@@ -30,7 +53,8 @@ base_url = 'https://tj.lianjia.com/ershoufang/yangcun/'  # 杨村
 def get_detail(url, max_date, info):
     html_text = get_html_list(url)
     if not html_text:
-        print('get %s fail' % url)
+        logger.warning('get %s fail' % url)
+        # print('get %s fail' % url)
         return 1
     write_file('html/tmp/detail_%s.html' % info.id, html_text.encode('utf-8'))
     soup = BeautifulSoup(html_text, "html.parser")
@@ -39,7 +63,8 @@ def get_detail(url, max_date, info):
 
     tag = soup.find('div', class_='introContent')
     if tag is None:
-        print('get %s fail' % url)
+        logger.warning('get %s fail' % url)
+        # print('get %s fail' % url)
         return 1
     tag_tmp = tag.find('div', class_='content')
     tags = tag_tmp.find_all('li')
@@ -70,7 +95,8 @@ def get_detail(url, max_date, info):
         str_date = format_date(str_date)
         info.date = int(str_date)
     except Exception as e:
-        print('get_detail: "%s" : ' % url, e)
+        logger.warning('get_detail: "%s" : ' % url + str(e))
+        # print('get_detail: "%s" : ' % url, e)
         return 2
     # # 判断日期是否超过最大
     # if (max_date > info.date):
@@ -137,8 +163,9 @@ def get_general(url, id_list, max_date, info, db):
     tag = soup.find('div', class_='bigImgList')
     # 链家有反爬虫限制
     if tag is None:
-        print('warning: %s' % url)
-        print("反爬虫")
+        logger.warning('warning: %s' % url + '反爬虫')
+        # print('warning: %s' % url)
+        # print("反爬虫")
         return -1
     tags = tag.find_all('div', class_='item')
     for tag in tags:
@@ -149,7 +176,8 @@ def get_general(url, id_list, max_date, info, db):
         # 标题
         tag_tmp = tag.find('a', class_='title')
         info.title = tag_tmp.get_text()
-        print('正在爬取：', info.title)
+        logger.info('正在爬取：' + info.title)
+        # print('正在爬取：', info.title)
 
         # 唯一ID
         text = tag.a['href']
@@ -166,20 +194,24 @@ def get_general(url, id_list, max_date, info, db):
             if result == 0:
                 # 可能存在重复
                 db.insert(info)
-                print('%s已入库：' % info.title, result)
+                logger.info('%s已入库：' % info.title + str(result))
+                # print('%s已入库：' % info.title, result)
                 # 格式化成2016-03-20 11:45:39形式
-                print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+                # print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
             elif result == 1:
-                print('未入库：', result)
+                logger.info('未入库：' + str(result))
+                # print('未入库：', result)
                 continue
             else:
-                print('未入库：', result)
+                logger.info('未入库：' + str(result))
+                # print('未入库：', result)
                 # return -2
                 continue
         else:
             # 如果发布频率快，可能导致有id重复。不使用id判断
             # return -3
-            print("%s已存在" % info.id)
+            logger.info("%s已存在" % info.id)
+            # print("%s已存在" % info.id)
             continue
 
         # 降低频率，防止被反爬虫
@@ -209,10 +241,13 @@ def main():
             https://tj.lianjia.com/ershoufang/yangcun/pg3/
             """
             url = '%spg%d' % (base_url, page)
-            print('#' * 10)
-            print('#' * 10, "正在爬取第%d页" % page, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+            logger.info('#' * 10)
+            # print('#' * 10)
+            logger.info('#' * 10 + "正在爬取第%d页" % page)
+            # print('#' * 10, "正在爬取第%d页" % page, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
             result = get_general(url, id_list, max_date, info, db)
-            print('#' * 10, "%d页爬取完成" % page, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+            logger.info('#' * 10 + "%d页爬取完成" % page)
+            # print('#' * 10, "%d页爬取完成" % page, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
             if result > 1:
                 page = page + 1
                 time.sleep(random.randint(5, 30))
