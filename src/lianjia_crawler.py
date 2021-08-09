@@ -14,9 +14,9 @@ import logging
 # 第一步，创建一个logger
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)  # Log等级总开关  此时是INFO
-
+local_date = time.strftime("%Y-%m-%d", time.localtime())
 # 第二步，创建一个handler，用于写入日志文件
-logfile = './ershoufang.log'
+logfile = './%s_ershoufang.log' % local_date
 fh = logging.FileHandler(logfile, mode='a')  # open的打开模式这里可以进行参考
 fh.setLevel(logging.INFO)  # 输出到file的log等级的开关
 
@@ -133,19 +133,19 @@ def get_detail(url, max_date, info):
     """
 
     # 下载房源图片
-    img_list = []
-    tag = soup.find('div', class_='thumbnail')
-
-    tags = tag.find('ul', class_='smallpic').find_all('li')
-    for tag in tags:
-        if tag is None:
-            continue
-        img_src = tag.find('img').attrs['src']
-
-        if img_src.endswith('.jpg'):
-            img_desc = tag.attrs['data-desc']
-            img_list.append(img_src)
-            download_img_lianjia(img_list, os.path.join('img/lianjia', info.id), img_desc)
+    # img_list = []
+    # tag = soup.find('div', class_='thumbnail')
+    #
+    # tags = tag.find('ul', class_='smallpic').find_all('li')
+    # for tag in tags:
+    #     if tag is None:
+    #         continue
+    #     img_src = tag.find('img').attrs['src']
+    #
+    #     if img_src.endswith('.jpg'):
+    #         img_desc = tag.attrs['data-desc']
+    #         img_list.append(img_src)
+    #         download_img_lianjia(img_list, os.path.join('img/lianjia', info.id), img_desc)
     return 0
 
 
@@ -251,8 +251,11 @@ def main():
             if result > 1:
                 page = page + 1
                 time.sleep(random.randint(5, 30))
+            elif result == -1:
+                # 反爬虫，休息10min-30min
+                time.sleep(random.randint(600, 1800))
             else:
-                # 报错后 重置爬取页数，从第一页开始重新爬取
+                # 报错后 重置爬取页数，休息100min，从第一页开始重新爬取
                 page = 1
                 time.sleep(sleep_time)
         except Exception as e:
