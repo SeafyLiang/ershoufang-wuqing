@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-
+import datetime
 import os
 import time
 import urllib
@@ -10,13 +10,15 @@ from bs4 import BeautifulSoup
 from src.common import *
 import urllib.request
 import logging
+from apscheduler.schedulers.blocking import BlockingScheduler
+
 
 # 第一步，创建一个logger
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)  # Log等级总开关  此时是INFO
 local_date = time.strftime("%Y-%m-%d", time.localtime())
 # 第二步，创建一个handler，用于写入日志文件
-logfile = './%s_ershoufang.log' % local_date
+logfile = './log/%s_ershoufang.log' % local_date
 fh = logging.FileHandler(logfile, mode='a')  # open的打开模式这里可以进行参考
 fh.setLevel(logging.INFO)  # 输出到file的log等级的开关
 
@@ -276,5 +278,22 @@ def main():
             pass
 
 
-if __name__ == '__main__':
+# 定时任务，每天00:01开始爬虫
+def start_crawler():
+    logger.info('#'*20 + "开始爬虫")
     main()
+
+
+if __name__ == '__main__':
+    # BlockingScheduler：在进程中运行单个任务，调度器是唯一运行的东西
+    scheduler = BlockingScheduler()
+    # 采用阻塞的方式
+
+    # 采用固定时间间隔（interval）的方式，每隔60*60*24秒钟（1天）执行一次
+    # scheduler.add_job(start_crawler, 'interval', seconds=60*60*24)
+
+    # 每天0：01执行任务
+    scheduler.add_job(start_crawler, 'cron', hour=0, minute=1)
+
+    scheduler.start()
+

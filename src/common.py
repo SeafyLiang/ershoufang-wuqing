@@ -115,6 +115,10 @@ class house_info:
         self.communityName = ''
 
 
+# 当前日期
+local_date = time.strftime("%Y%m%d", time.localtime())
+
+
 class house_info_db:
     def __init__(self, db_name):
         # sqllite
@@ -124,18 +128,24 @@ class house_info_db:
                                    charset='utf8')
         self.cur = self.con.cursor()
 
-        # 房源ID,标题,发布日期,小区,户型,建筑面积,价格,建筑年代,朝向,楼层,房本年限,唯一住房,详情页网址,房源类型
-        self.cur.execute('create table if not exists house_info(id VARCHAR(30) primary key,title VARCHAR(100),' +
-                         'date VARCHAR(10),village VARCHAR(30),house_plan VARCHAR(10),area VARCHAR(10),price VARCHAR(10),' +
-                         'build_year VARCHAR(10),orientation VARCHAR(10),floor VARCHAR(10),room_year VARCHAR(10),' +
-                         'sole VARCHAR(10),detail_web VARCHAR(100),type int,communityName VARCHAR(30));')
+        # 当前日期建表
+        global local_date
+        # 房源ID,标题,发布日期,小区,户型,建筑面积,价格,建筑年代,朝向,楼层,房本年限,唯一住房,详情页网址,房源类型，小区名
+        self.cur.execute(
+            'create table if not exists house_info_%s(id VARCHAR(30) primary key,title VARCHAR(100),' % local_date +
+            'date VARCHAR(10),village VARCHAR(30),house_plan VARCHAR(10),area VARCHAR(10),price VARCHAR(10),' +
+            'build_year VARCHAR(10),orientation VARCHAR(10),floor VARCHAR(10),room_year VARCHAR(10),' +
+            'sole VARCHAR(10),detail_web VARCHAR(100),type int,communityName VARCHAR(30));')
         self.con.commit()
 
     def insert(self, info):
         try:
-            sql = 'insert into house_info values ("%s","%s",%d,"%s","%s","%s","%s","%s","%s","%s","%s","%s", "%s", %d, "%s")' % \
-                  (info.id, info.title, info.date, info.village, info.house_plan, info.area, info.price,
-                   info.build_year, info.orientation, info.floor, info.room_year, info.sole, info.detail_web, info.type, info.communityName)
+            # 当前日期
+            local_date = time.strftime("%Y%m%d", time.localtime())
+            sql = 'insert into house_info_%s values ("%s","%s",%d,"%s","%s","%s","%s","%s","%s","%s","%s","%s", "%s", %d, "%s")' % \
+                  (local_date, info.id, info.title, info.date, info.village, info.house_plan, info.area, info.price,
+                   info.build_year, info.orientation, info.floor, info.room_year, info.sole, info.detail_web, info.type,
+                   info.communityName)
             # sql = sql.decode('utf-8')
             self.cur.execute(sql)
             self.con.commit()
@@ -144,14 +154,18 @@ class house_info_db:
             print('insert: ', e)
 
     def query_ids(self, type, id_list):
-        sql = 'select id from house_info where type=%d;' % type
+        # 当前日期
+        global local_date
+        sql = 'select id from house_info_%s where type=%d;' % (local_date, type)
         self.cur.execute(sql)
         results = self.cur.fetchall()
         for result in results:
             id_list.append(result[0])
 
     def query_max_date(self, type):
-        sql = 'select max(date) from house_info where type=%d;' % type
+        # 当前日期
+        global local_date
+        sql = 'select max(date) from house_info_%s where type=%d;' % (local_date, type)
         self.cur.execute(sql)
         results = self.cur.fetchone()
         if len(results) > 0 and results[0]:
