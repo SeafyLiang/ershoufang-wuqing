@@ -111,6 +111,8 @@ class house_info:
         self.detail_web = ''
         # 房源类型 0：anjuke
         self.type = TYPE_ANJUKE
+        # 小区名
+        self.communityName = ''
 
 
 class house_info_db:
@@ -126,14 +128,14 @@ class house_info_db:
         self.cur.execute('create table if not exists house_info(id VARCHAR(30) primary key,title VARCHAR(100),' +
                          'date VARCHAR(10),village VARCHAR(30),house_plan VARCHAR(10),area VARCHAR(10),price VARCHAR(10),' +
                          'build_year VARCHAR(10),orientation VARCHAR(10),floor VARCHAR(10),room_year VARCHAR(10),' +
-                         'sole VARCHAR(10),detail_web VARCHAR(100),type int);')
+                         'sole VARCHAR(10),detail_web VARCHAR(100),type int,communityName VARCHAR(30));')
         self.con.commit()
 
     def insert(self, info):
         try:
-            sql = 'insert into house_info values ("%s","%s",%d,"%s","%s","%s","%s","%s","%s","%s","%s","%s", "%s", %d)' % \
+            sql = 'insert into house_info values ("%s","%s",%d,"%s","%s","%s","%s","%s","%s","%s","%s","%s", "%s", %d, "%s")' % \
                   (info.id, info.title, info.date, info.village, info.house_plan, info.area, info.price,
-                   info.build_year, info.orientation, info.floor, info.room_year, info.sole, info.detail_web, info.type)
+                   info.build_year, info.orientation, info.floor, info.room_year, info.sole, info.detail_web, info.type, info.communityName)
             # sql = sql.decode('utf-8')
             self.cur.execute(sql)
             self.con.commit()

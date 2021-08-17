@@ -44,6 +44,9 @@ db_name = 'house_info'
 # base_url = "https://tj.lianjia.com/ershoufang/wuqing/" # 武清
 base_url = 'https://tj.lianjia.com/ershoufang/yangcun/'  # 杨村
 
+# warning_num,如果出现反爬虫次数超过10次，停止爬虫
+warning_num = 0
+
 
 # 解析房屋详情
 # return
@@ -51,6 +54,7 @@ base_url = 'https://tj.lianjia.com/ershoufang/yangcun/'  # 杨村
 #       1: 获取网页失败，可能受限制 2: 失败，可能乱码
 #       0: 正常
 def get_detail(url, max_date, info):
+    global warning_num
     html_text = get_html_list(url)
     if not html_text:
         logger.warning('get %s fail' % url)
@@ -83,6 +87,9 @@ def get_detail(url, max_date, info):
     info.sole = get_text(tags, 10, 4, -1)
     # 装修情况
     info.build_year = get_text(tags, 8, 4, -1)
+    # 小区名
+    communityName_tag = soup.find('div', class_='communityName').find('a', class_='info')
+    info.communityName = communityName_tag.get_text()
 
     tag_tmp = tag.find('div', class_='transaction')
     tag_tmp = tag_tmp.find('div', class_='content')
@@ -154,6 +161,7 @@ def get_detail(url, max_date, info):
 #   -1: 反爬虫  -2: 已存在  -3: 详情页错误
 #   0:  正常    
 def get_general(url, id_list, max_date, info, db):
+    global warning_num
     html_text = get_html_list(url)
     soup = BeautifulSoup(html_text, "html.parser")
     # write_file('index.html', html_text.encode('utf-8'))
@@ -164,6 +172,7 @@ def get_general(url, id_list, max_date, info, db):
     # 链家有反爬虫限制
     if tag is None:
         logger.warning('warning: %s' % url + '反爬虫')
+        warning_num = warning_num + 1
         # print('warning: %s' % url)
         # print("反爬虫")
         return -1
@@ -220,6 +229,7 @@ def get_general(url, id_list, max_date, info, db):
 
 
 def main():
+    global warning_num
     db = house_info_db(db_name)
     id_list = []
     max_date = get_info_from_db(db, TYPE_LIANJIA, id_list)
@@ -240,6 +250,9 @@ def main():
             https://tj.lianjia.com/ershoufang/yangcun/pg2/
             https://tj.lianjia.com/ershoufang/yangcun/pg3/
             """
+
+            if warning_num >= 10:
+                break
             url = '%spg%d' % (base_url, page)
             logger.info('#' * 10)
             # print('#' * 10)
