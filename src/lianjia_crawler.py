@@ -80,7 +80,8 @@ def get_detail(url, max_date, info):
     # 楼层
     info.floor = get_text(tags, 1, 4, -1)
     # 建筑面积
-    info.area = get_text(tags, 2, 4, -1)
+    info.area = float(get_text(tags, 2, 4, -2).strip('㎡'))
+    # area_tmp = get_text(tags, 2, 4, -2).strip('㎡')
     # 朝向
     info.orientation = get_text(tags, 6, 4, -1)
     # 电梯
@@ -182,7 +183,8 @@ def get_general(url, id_list, max_date, info, db):
     for tag in tags:
         # 价格
         tag_tmp = tag.find('div', class_='price')
-        info.price = tag_tmp.get_text()
+        info.price = float(tag_tmp.get_text().strip('万'))
+        # price_tmp = tag_tmp.get_text().strip('万')
 
         # 标题
         tag_tmp = tag.find('a', class_='title')
