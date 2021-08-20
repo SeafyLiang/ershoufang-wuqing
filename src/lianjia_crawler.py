@@ -163,7 +163,7 @@ def get_detail(url, max_date, info):
 # return:
 #   -1: 反爬虫  -2: 已存在  -3: 详情页错误
 #   0:  正常    
-def get_general(url, id_list, max_date, info, db):
+def get_general(url, id_list, max_date, info, db, local_date):
     global warning_num
     html_text = get_html_list(url)
     soup = BeautifulSoup(html_text, "html.parser")
@@ -206,7 +206,7 @@ def get_general(url, id_list, max_date, info, db):
             result = get_detail(text, max_date, info)
             if result == 0:
                 # 可能存在重复
-                db.insert(info)
+                db.insert(info, local_date)
                 logger.info('%s已入库：' % info.title + str(result))
                 # print('%s已入库：' % info.title, result)
                 # 格式化成2016-03-20 11:45:39形式
@@ -234,9 +234,11 @@ def get_general(url, id_list, max_date, info, db):
 
 def main():
     global warning_num
-    db = house_info_db(db_name)
+    # 当前日期
+    local_date = time.strftime("%Y%m%d", time.localtime())
+    db = house_info_db(db_name, local_date)
     id_list = []
-    max_date = get_info_from_db(db, TYPE_LIANJIA, id_list)
+    max_date = get_info_from_db(db, TYPE_LIANJIA, id_list, local_date)
 
     info = house_info()
     info.type = TYPE_LIANJIA
@@ -262,7 +264,7 @@ def main():
             # print('#' * 10)
             logger.info('#' * 10 + "正在爬取第%d页" % page)
             # print('#' * 10, "正在爬取第%d页" % page, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
-            result = get_general(url, id_list, max_date, info, db)
+            result = get_general(url, id_list, max_date, info, db, local_date)
             logger.info('#' * 10 + "%d页爬取完成" % page)
             # print('#' * 10, "%d页爬取完成" % page, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
             if result > 1:
