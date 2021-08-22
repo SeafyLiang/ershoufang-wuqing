@@ -297,7 +297,8 @@ if __name__ == '__main__':
     # scheduler.add_job(start_crawler, 'interval', seconds=60*60*24)
 
     # 每天0：01执行任务
-    scheduler.add_job(start_crawler, 'cron', hour=0, minute=1)
+    scheduler.add_job(start_crawler, 'cron', hour=18, minute=30)
 
     scheduler.start()
+    # main()
 
