@@ -98,7 +98,7 @@ def pic2(communityName_list, communityNum_list, communityPrice2m_list, date):
                  )
     # 标题
     plt.title('%s_小区房屋数量Top5均价柱状图' % date)
-    plt.xticks([])
+    # plt.xticks([])
     plt.yticks([])
     return plt
 
@@ -122,12 +122,18 @@ def cal_info(engine, date):
     # 房屋统计信息
     house_describe = df.describe()
     global mail_str
-    mail_str = mail_str + "\n你好，昨日：%s的房屋信息已统计完毕，" \
-                          "\n筛选条件：价格50-200W, 面积90-150平" \
+    mail_str = mail_str + "\n你好，昨日：%s天津武清杨村的房屋信息已统计完毕" \
+                          "\n内容包含：" \
+                          "\n【昨日房屋统计】【近5天小区房价统计】【近5天均价日变化】" \
+                          "\n\n筛选条件：价格50-200W, 面积90-150平" \
                           "\n房屋均价为：%f米²/万" \
-                          "\n房屋统计信息为：" \
+                          "\n\n ##########昨日房屋统计信息为：" \
                           "\n%s" \
                           "\n\n" % (date, df['m2price'].mean(), house_describe)
+    # mail_str = mail_str + "\n你好，昨日：%s的房屋信息已统计完毕，" \
+    #                       "\n筛选条件：价格50-200W, 面积90-150平" \
+    #                       "\n房屋均价为：%f米²/万" \
+    #                       "\n\n" % (date, df['m2price'].mean())
     # 面积-价格分布散点图
     pic1_plt = pic1(df, date)
     pic1_plt.savefig("./house_cal_pic/0all.jpg")
@@ -153,8 +159,7 @@ def get_communityList(engine, date):
         # 小区均价
         communityPrice2m_list.append(df_community['m2price'].mean())  # 1.5414622079622249
     global mail_str
-    mail_str = mail_str + "\n\n近5天小区房价统计:\n"
-    mail_str = mail_str + "日期：%s_小区统计信息" % date
+    mail_str = mail_str + "\n\n%s_小区统计信息" % date
     mail_str = mail_str + '\n小区名：' + str(communityName_list)
     mail_str = mail_str + '\n房屋数量：' + str(communityNum_list)
     mail_str = mail_str + '\n小区均价：' + str(communityPrice2m_list)
@@ -170,6 +175,36 @@ def get_detail_from_community(engine, date, communityName):
     # 使用 sub 进行数据替换
     df = pd.read_sql(sql, engine)
     return df
+
+
+# 房屋均价信息字典
+dict_result_all = {}
+dict_result_community = {}
+
+
+# 查询房屋均价走势，折线图
+def get_house_all_price2m(engine, date):
+    global dict_result
+    global dict_result_community
+    # 筛选条件：价格50-200W, 面积90-150平
+    global condition_sql
+    sql = "SELECT title,date,village,house_plan,area,price,build_year,orientation,floor,sole,detail_web,communityName FROM house_info_%s " % date + condition_sql
+    # 使用 sub 进行数据替换
+    df = pd.read_sql(sql, engine)
+    df['m2price'] = df['price'] / df['area']
+    # 总均价
+    print(df['m2price'].mean())
+    dict_result_all.update({"%s" % date: df['m2price'].mean()})
+    sql = "SELECT COUNT(id) as communityNum, communityName FROM house_info_%s " % date + condition_sql + " GROUP BY communityName ORDER BY communityNum DESC LIMIT 5 "
+    # 使用 sub 进行数据替换
+    df = pd.read_sql(sql, engine)
+    communityName_list = df.communityName.tolist()  # ['福苑小区', '广厦南里东区', '广厦南里西区', '和平里小区南区', '广厦西里']
+    for communityName in communityName_list:
+        df_community = get_detail_from_community(engine, date, communityName)
+        df_community['m2price'] = df_community['price'] / df_community['area']
+        # 小区均价
+        dict_result_community.update({"%s_%s" % (communityName, date): df_community['m2price'].mean()})
+    return dict_result_all, dict_result_community
 
 
 # 带eda.html发邮件
@@ -247,6 +282,8 @@ def getdate(beforeOfDay):
 
 
 def start_eda():
+    global mail_str
+    mail_str = ""
     today = datetime.datetime.now()
     today_str = today.strftime('%Y%m%d')
     # 创建数据库连接，这里使用的是pymysql
@@ -256,14 +293,21 @@ def start_eda():
     cal_info(engine, before_date)
     # 获取前n天日期字符串
     # 1-5
-    for i in range(5):
+
+    day_total = 5
+    mail_str = mail_str + "\n\n ##########近%d天小区房价统计:\n" % day_total
+    for i in range(day_total):
         i = i + 1
         before_date = getdate(i)
         print(before_date)
         plc2_plt = get_communityList(engine, before_date)
         plc2_plt.savefig('./house_cal_pic/%s.jpg' % str(i))
+        dict_result_a, dict_result_c = get_house_all_price2m(engine, before_date)
+    mail_str = mail_str + "\n\n ##########近5天均价日变化： \n"
+    mail_str = mail_str + "\n【总均价】 日变化：%s \n" % str(dict_result_a)
+    mail_str = mail_str + "\n【小区均价】 日变化：%s \n" % str(sorted(dict_result_c.items(), key=lambda d: d[0], reverse=True))
     print(mail_str)
-    send_email_jpg("%s_天津武清杨村房屋数据分析" % today_str, mail_str)
+    send_email_jpg("%s_房屋数据分析" % today_str, mail_str)
 
 
 if __name__ == '__main__':
@@ -275,6 +319,7 @@ if __name__ == '__main__':
     # scheduler.add_job(start_crawler, 'interval', seconds=60*60*24)
 
     # 每天0：01执行任务
-    scheduler.add_job(start_eda, 'cron', hour=14, minute=30)
+    scheduler.add_job(start_eda, 'cron', hour=11, minute=30, misfire_grace_time=3600)
 
     scheduler.start()
+    # start_eda()
