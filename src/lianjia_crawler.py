@@ -289,7 +289,7 @@ def start_crawler():
 
 
 if __name__ == '__main__':
-    main()
+    # main()
     # BlockingScheduler：在进程中运行单个任务，调度器是唯一运行的东西
     scheduler = BlockingScheduler()
     # 采用阻塞的方式
@@ -299,7 +299,7 @@ if __name__ == '__main__':
 
     # 每天0：01执行任务
     # misfire_grace_time=3600 任务的超时容错配置，给executor 一个超时时间，这个时间范围内要是该跑的还没跑完，就别再跑了
-    scheduler.add_job(start_crawler, 'cron', hour=18, minute=00, misfire_grace_time=60*60*24)
+    scheduler.add_job(start_crawler, 'cron', hour=14, minute=30, misfire_grace_time=60*60*24)
     # 采用固定时间间隔（interval）的方式，每隔60*60*24秒钟(24h)执行一次
     # scheduler.add_job(start_crawler, 'interval', seconds=60*60*24)
     # 这是一个独立的线程
